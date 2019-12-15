@@ -34,7 +34,7 @@ public class Telegram extends TelegramLongPollingBot {
 
     public String commandWhoami(){
         StringBuilder defaultInfo = new StringBuilder();
-        defaultInfo.append(String.format("Respuesta del terminal: %s", responseFromTerminal("whoami")));
+        defaultInfo.append(String.format("Respuesta del terminal:\n%s", responseFromTerminal("whoami")));
 
         return defaultInfo.toString();
     }

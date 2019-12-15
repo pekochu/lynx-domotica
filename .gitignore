@@ -5,6 +5,7 @@ target/
 .classpath
 .project
 .settings/
+logs/
 docs/tmp/
 docs/java-getting-started/
 
