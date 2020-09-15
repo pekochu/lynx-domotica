@@ -1,46 +1,69 @@
 package com.pekochu.lynx.bots;
 
-import com.pekochu.lynx.utilities.Constants;
+import com.pekochu.lynx.utilities.TelegramService;
+import com.vdurmont.emoji.EmojiParser;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import org.telegram.telegrambots.ApiContextInitializer;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import javax.annotation.PostConstruct;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
-public class Telegram extends TelegramLongPollingBot {
+@Component
+public class TelegramBot extends TelegramLongPollingBot {
 
-    private final static Logger LOGGER = LoggerFactory.getLogger(Telegram.class.getCanonicalName());
-    private final static String BOTNAME = "Lynx";
-    private final Constants mConstants;
+    // DI
+    @Autowired
+    private TelegramService telegramService;
 
-    public Telegram(){
-        this.mConstants = new Constants();
+    // Variables
+    private final static Logger LOGGER = LoggerFactory.getLogger(TelegramBot.class.getCanonicalName());
+
+    // Static Api Context Initializer
+    static{
+        ApiContextInitializer.init();
     }
 
-    // Comandos
+    public TelegramBot(){
+        // Empty constructor
+    }
+
+    @PostConstruct
+    public void registerBot(){
+        TelegramBotsApi telegramBotsApi = new TelegramBotsApi();
+        try {
+            telegramBotsApi.registerBot(this);
+        } catch (TelegramApiException e) {
+            LOGGER.error(e.getMessage(), e);
+        }
+    }
+
+    // Commands
     public String commandDefault(Update update){
         StringBuilder defaultInfo = new StringBuilder();
-        defaultInfo.append(String.format("Hola, %s.", update.getMessage().getChat().getUserName()));
-        defaultInfo.append(String.format("\nMi nombre es %s y soy un bot.\nExplora los comandos para ", BOTNAME));
-        defaultInfo.append("averiguar qué es lo que puedo hacer.");
+        defaultInfo.append(String.format("Hola, %s. :relieved:", update.getMessage().getChat().getUserName()));
 
-        return defaultInfo.toString();
+        return EmojiParser.parseToUnicode(defaultInfo.toString());
     }
 
     public String commandWhoami(){
         StringBuilder defaultInfo = new StringBuilder();
-        defaultInfo.append(String.format("Respuesta del terminal:\n%s", responseFromTerminal("whoami")));
+        defaultInfo.append(String.format("Respuesta del terminal:\n%s\n:hushed:", responseFromTerminal("whoami")));
 
-        return defaultInfo.toString();
+        return EmojiParser.parseToUnicode(defaultInfo.toString());
     }
 
-
+    // Handler
     @Override
     public void onUpdateReceived(final Update update) {
         LOGGER.info("Request from {}", update.getMessage().getChat().getUserName());
@@ -76,12 +99,12 @@ public class Telegram extends TelegramLongPollingBot {
 
     @Override
     public String getBotUsername() {
-        return mConstants.getTelegramUsername();
+        return telegramService.getUsername();
     }
 
     @Override
     public String getBotToken() {
-        return mConstants.getTelegramToken();
+        return telegramService.getToken();
     }
 
     @NotNull
