@@ -17,7 +17,7 @@ public class Telegram extends TelegramLongPollingBot {
 
 
     private final static Logger LOGGER = LoggerFactory.getLogger(Telegram.class.getCanonicalName());
-    private final static String BOTNAME = "Alessandra";
+    private final static String BOTNAME = "";
 
     public Telegram(){
     }
@@ -75,12 +75,12 @@ public class Telegram extends TelegramLongPollingBot {
 
     @Override
     public String getBotUsername() {
-        return Constants.TELEGRAM_USERNAME;
+        return "";
     }
 
     @Override
     public String getBotToken() {
-        return Constants.TELEGRAM_TOKEN;
+        return "";
     }
 
     @NotNull

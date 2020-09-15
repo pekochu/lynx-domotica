@@ -12,20 +12,9 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
 @SpringBootApplication
 public class Application {
 
-    private final static Logger LOGGER = LoggerFactory.getLogger(Application.class.getCanonicalName());
-
     public static void main(String[] args){
         SpringApplication.run(Application.class, args);
         ApiContextInitializer.init();
-        LOGGER.info("Alessandra Bot Server initiated");
-
-        // Telegram API
-        try {
-            final TelegramBotsApi telegramBotsApi = new TelegramBotsApi();
-            telegramBotsApi.registerBot(new Telegram());
-        } catch (TelegramApiRequestException e) {
-            LOGGER.error(e.getMessage(), e);
-        }
     }
 
 

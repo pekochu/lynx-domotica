@@ -19,7 +19,6 @@ public class Home {
             method = RequestMethod.GET)
     public @ResponseBody
     ResponseEntity<String> main() {
-        LOGGER.info("Home called");
         JSONObject greet = new JSONObject();
         greet.put("header", HttpStatus.OK);
         greet.put("content", "Hello world");
