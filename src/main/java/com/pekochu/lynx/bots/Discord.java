@@ -1,4 +1,4 @@
-package com.pekochu.app.bots;
+package com.pekochu.lynx.bots;
 
 import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;

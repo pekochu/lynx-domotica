@@ -1,2 +1,2 @@
-# java-domotica
-Servidor en Java para diversas aplicaciones relacionados con la domótica.
+# Lynx Domotics
+Proyecto en Java para automatizar ciertas acciones en mi casa.

@@ -15,11 +15,12 @@ import java.io.InputStreamReader;
 
 public class Telegram extends TelegramLongPollingBot {
 
-
     private final static Logger LOGGER = LoggerFactory.getLogger(Telegram.class.getCanonicalName());
-    private final static String BOTNAME = "";
+    private final static String BOTNAME = "Lynx";
+    private final Constants mConstants;
 
     public Telegram(){
+        this.mConstants = new Constants();
     }
 
     // Comandos
@@ -75,12 +76,12 @@ public class Telegram extends TelegramLongPollingBot {
 
     @Override
     public String getBotUsername() {
-        return "";
+        return mConstants.getTelegramUsername();
     }
 
     @Override
     public String getBotToken() {
-        return "";
+        return mConstants.getTelegramToken();
     }
 
     @NotNull
