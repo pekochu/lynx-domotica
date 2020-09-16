@@ -7,10 +7,10 @@ import org.springframework.stereotype.Service;
 public class TelegramServiceImpl implements TelegramService{
 
     @Value("${env.telegram.token}")
-    public String token;
+    private String token;
 
     @Value("${env.telegram.username}")
-    public String username;
+    private String username;
 
     public String getToken() {
         return this.token;
