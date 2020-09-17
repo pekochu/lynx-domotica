@@ -81,9 +81,7 @@ public class BasicCommands implements AbilityExtension {
                 .privacy(Privacy.PUBLIC)
                 .action(ctx -> {
                     StringBuilder reply = new StringBuilder();
-                    reply.append(String.format("Tu Telegram ID es: %d :stuck_out_tongue:",
-                            ctx.user().getUserName(),
-                            ctx.user().getId()));
+                    reply.append(String.format("Tu Telegram ID es: %d :stuck_out_tongue:", ctx.user().getId()));
                     silent.send(EmojiParser.parseToUnicode(reply.toString()), ctx.chatId());
                 })
                 .build();

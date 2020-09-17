@@ -1,7 +1,8 @@
 package com.pekochu.lynx.bots;
 
 import com.pekochu.lynx.commands.telegram.BasicCommands;
-import com.pekochu.lynx.commands.telegram.DriveOauthFlow;
+import com.pekochu.lynx.commands.telegram.DriveCommands;
+import com.pekochu.lynx.commands.telegram.GoogleOauthFlow;
 import com.pekochu.lynx.utilities.GoogleDriveService;
 import com.pekochu.lynx.utilities.TelegramService;
 import org.slf4j.Logger;
@@ -19,14 +20,13 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import javax.annotation.PostConstruct;
 
-import static org.telegram.abilitybots.api.objects.Privacy.PUBLIC;
-
 @Component
 public class TelegramBot extends AbilityBot {
 
     // Variables
     private final static Logger LOGGER = LoggerFactory.getLogger(TelegramBot.class.getCanonicalName());
-    private final DriveOauthFlow driveOauthFlow;
+    private final GoogleOauthFlow googleOauthFlow;
+    private final DriveCommands driveCommands;
 
     static{
         ApiContextInitializer.init();
@@ -35,7 +35,10 @@ public class TelegramBot extends AbilityBot {
     @Autowired
     public TelegramBot(TelegramService telegramService, GoogleDriveService googleDriveService){
         super(telegramService.getToken(), telegramService.getUsername());
-        driveOauthFlow = new DriveOauthFlow(sender, db,
+        googleOauthFlow = new GoogleOauthFlow(sender, db,
+                googleDriveService.getCliendId(), googleDriveService.getClientSecret());
+
+        driveCommands = new DriveCommands(sender, db,
                 googleDriveService.getCliendId(), googleDriveService.getClientSecret());
     }
 
@@ -61,14 +64,26 @@ public class TelegramBot extends AbilityBot {
     }
 
     // Google Drive
+    public Ability googleAuthCommand(){
+        return Ability
+                .builder()
+                .name("googleauth")
+                .info("Autentíficarse con la API de Google.")
+                .locality(Locality.ALL)
+                .privacy(Privacy.PUBLIC)
+                .action(ctx -> googleOauthFlow.replyToOauth(ctx))
+                .build();
+    }
+
+    // Google Drive
     public Ability driveCommand(){
         return Ability
                 .builder()
                 .name("drive")
-                .info("")
+                .info("Interactuar con la API de Google Drive con el bot.")
                 .locality(Locality.ALL)
                 .privacy(Privacy.PUBLIC)
-                .action(ctx -> driveOauthFlow.replyToDrive(ctx))
+                .action(ctx -> driveCommands.replyToDrive(ctx))
                 .build();
     }
 
