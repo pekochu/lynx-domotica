@@ -17,6 +17,8 @@ import org.slf4j.LoggerFactory;
 import org.telegram.abilitybots.api.db.DBContext;
 import org.telegram.abilitybots.api.objects.MessageContext;
 import org.telegram.abilitybots.api.sender.MessageSender;
+import org.telegram.telegrambots.meta.api.methods.ActionType;
+import org.telegram.telegrambots.meta.api.methods.send.SendChatAction;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
@@ -63,7 +65,13 @@ public class DriveCommands {
         GoogleCredential credential = null;
         Drive service = null;
 
+        SendChatAction sendChatAction = new SendChatAction();
+        sendChatAction.setChatId(ctx.chatId());
+        sendChatAction.setAction(ActionType.TYPING);
+
         try {
+            sender.execute(sendChatAction);
+
             if (driveCredentials.get(ctx.chatId()) == null) {
                 sender.execute(new SendMessage()
                         .setText("No has iniciado sesión. Por favor, usa el comando" +
@@ -200,34 +208,72 @@ public class DriveCommands {
                                 .setFields("name, id, mimeType, kind, parents, owners, capabilities")
                                 .execute();
 
-                        if(args.length > 2){
-                            for (int i = 2; i < args.length; i++) {
-                                text.append(args[i]);
-                                if(i < args.length -1) text.append(" ");
-                            }
+                        if(parentFile.getId() == null){
+                            text.append("No se ha podido encontrar este archivo. :pleading_face:");
                         }else{
-                            text.append(parentFile.getName());
+                            LOGGER.info(String.format("File ID: %s", parentFile.getId()));
+                            LOGGER.info(String.format("Name: %s", parentFile.getName()));
+                            if(args.length > 2){
+                                for (int i = 2; i < args.length; i++) {
+                                    text.append(args[i]);
+                                    if(i < args.length -1) text.append(" ");
+                                }
+                            }else{
+                                text.append(parentFile.getName());
+                            }
+
+                            File dstFile = new File();
+                            dstFile.setName(text.toString());
+                            dstFile.setParents(Collections.singletonList("root"));
+
+                            File finalFile = service.files()
+                                    .copy(parentFile.getId(), dstFile)
+                                    .execute();
+
+                            text = new StringBuilder();
+                            text.append(finalFile.getId())
+                                    .append(String.format("<i>%s</i> ha sido copiado con éxito en la raiz del " +
+                                            "Drive como <b>%s</b>", finalFile.getId(), finalFile.getName()))
+                                    .append("\n¡Saludos! :partying_face:");
+                            // end-copying
                         }
-
-
-                        File dstFile = new File();
-                        dstFile.setName(text.toString());
-                        dstFile.setParents(Collections.singletonList("root"));
-
-                        File finalFile = service.files()
-                                .copy(parentFile.getId(), dstFile)
+                        // end-copying
+                    }else{
+                        File parentFile = service.files()
+                                .get(args[1])
+                                .setFields("name, id, mimeType, kind, parents, owners, capabilities")
                                 .execute();
 
-                        text = new StringBuilder();
-                        text.append(finalFile.getId())
-                                .append(String.format("<i>%s</i> ha sido copiado con éxito en la raiz del " +
-                                                "Drive como <b>%s</b>", finalFile.getId(), finalFile.getName()))
-                                .append("\n¡Saludos! :partying_face:");
-                    }else{
-                        text = new StringBuilder();
-                        text.append("La URL del archivo de Drive tiene que tener el formato como sigue:\n<code>");
-                        text.append("https://drive.google.com/file/d/&lt;1XXXXXXXXXXXXX_XXXXXXXXXXXXXXXXX&gt;")
-                                .append("</code>\n\nPor favor. Gracias. :pleading_face:");
+                        if(parentFile.getId() == null){
+                            text.append("No se ha podido encontrar este archivo. :pleading_face:");
+                        }else{
+                            LOGGER.info(String.format("File ID: %s", parentFile.getId()));
+                            LOGGER.info(String.format("Name: %s", parentFile.getName()));
+                            if(args.length > 2){
+                                for (int i = 2; i < args.length; i++) {
+                                    text.append(args[i]);
+                                    if(i < args.length -1) text.append(" ");
+                                }
+                            }else{
+                                text.append(parentFile.getName());
+                            }
+
+                            File dstFile = new File();
+                            dstFile.setName(text.toString());
+                            dstFile.setParents(Collections.singletonList("root"));
+
+                            File finalFile = service.files()
+                                    .copy(parentFile.getId(), dstFile)
+                                    .execute();
+
+                            text = new StringBuilder();
+                            text.append(finalFile.getId())
+                                    .append(String.format("<i>%s</i> ha sido copiado con éxito en la raiz del " +
+                                            "Drive como <b>%s</b>", finalFile.getId(), finalFile.getName()))
+                                    .append("\n¡Saludos! :partying_face:");
+                            // end-copying
+                        }
+
                     }
 
                     sender.execute(new SendMessage()
@@ -240,7 +286,7 @@ public class DriveCommands {
                     text = new StringBuilder();
                     File dstFile;
 
-                    LOGGER.info(String.format("ID: %s", args[1]));
+                    LOGGER.info(String.format("Folder ID: %s", args[1]));
                     do {
                         FileList result = service.files().list()
                                 .setQ(String.format("'%s' in parents", args[1]))
@@ -264,9 +310,9 @@ public class DriveCommands {
                                     .copy(f.getId(), dstFile)
                                     .execute();
 
-                            text.append(String.format("<i>%s</i> copiado con éxito.\n"));
+                            text.append(String.format("<i>%s</i> copiado con éxito.\n", f.getName()));
                         }else{
-                            text.append(String.format("<i>%s</i> <b>no pudo copiarse.</b>\n"));
+                            text.append(String.format("<i>%s</i> <b>no pudo copiarse.</b>\n", f.getName()));
                         }
 
                     }

@@ -22,6 +22,8 @@ import org.slf4j.LoggerFactory;
 import org.telegram.abilitybots.api.db.DBContext;
 import org.telegram.abilitybots.api.objects.MessageContext;
 import org.telegram.abilitybots.api.sender.MessageSender;
+import org.telegram.telegrambots.meta.api.methods.ActionType;
+import org.telegram.telegrambots.meta.api.methods.send.SendChatAction;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
@@ -56,7 +58,13 @@ public class GoogleOauthFlow {
         String currentState = driveStates.get(ctx.chatId());
         String[] args = ctx.arguments();
 
+        SendChatAction sendChatAction = new SendChatAction();
+        sendChatAction.setChatId(ctx.chatId());
+        sendChatAction.setAction(ActionType.TYPING);
+
         try {
+            sender.execute(sendChatAction);
+
             if (args.length < 1) {
                 sender.execute(new SendMessage()
                         .setText(EmojiParser.parseToUnicode("Argumentos disponibles para este comando:\n\n" +

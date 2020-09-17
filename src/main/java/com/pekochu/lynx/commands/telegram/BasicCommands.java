@@ -7,6 +7,8 @@ import org.telegram.abilitybots.api.objects.Locality;
 import org.telegram.abilitybots.api.objects.Privacy;
 import org.telegram.abilitybots.api.sender.SilentSender;
 import org.telegram.abilitybots.api.util.AbilityExtension;
+import org.telegram.telegrambots.meta.api.methods.ActionType;
+import org.telegram.telegrambots.meta.api.methods.send.SendChatAction;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -21,12 +23,19 @@ public class BasicCommands implements AbilityExtension {
     }
 
     public Ability start(){
+
+        SendChatAction sendChatAction = new SendChatAction();
+        sendChatAction.setAction(ActionType.TYPING);
+
         return Ability.builder()
                 .name("start")
                 .info("¡Hola, mundo!")
                 .privacy(Privacy.PUBLIC)
                 .locality(Locality.ALL)
                 .action(ctx -> {
+                    sendChatAction.setChatId(ctx.chatId());
+                    silent.execute(sendChatAction);
+
                     StringBuilder text = new StringBuilder();
                     text.append(String.format("Hola, %s. :relieved:", ctx.user().getUserName()));
 
@@ -36,12 +45,18 @@ public class BasicCommands implements AbilityExtension {
     }
 
     public Ability whoami(){
+        SendChatAction sendChatAction = new SendChatAction();
+        sendChatAction.setAction(ActionType.TYPING);
+
         return Ability.builder()
                 .name("whoami")
                 .info("Devuelve la respuesta del comando \"whoami\".")
                 .privacy(Privacy.PUBLIC)
                 .locality(Locality.ALL)
                 .action(ctx -> {
+                    sendChatAction.setChatId(ctx.chatId());
+                    silent.execute(sendChatAction);
+
                     StringBuilder text = new StringBuilder();
                     text.append(String.format("Respuesta del terminal:\n%s\n:hushed:", responseFromTerminal("whoami")));
 
@@ -74,12 +89,18 @@ public class BasicCommands implements AbilityExtension {
     }
 
     public Ability telegramId() {
+        SendChatAction sendChatAction = new SendChatAction();
+        sendChatAction.setAction(ActionType.TYPING);
+
         return Ability.builder()
                 .name("id")
                 .info("Te muestra tu Telegram ID.")
                 .locality(Locality.ALL)
                 .privacy(Privacy.PUBLIC)
                 .action(ctx -> {
+                    sendChatAction.setChatId(ctx.chatId());
+                    silent.execute(sendChatAction);
+
                     StringBuilder reply = new StringBuilder();
                     reply.append(String.format("Tu Telegram ID es: %d :stuck_out_tongue:", ctx.user().getId()));
                     silent.send(EmojiParser.parseToUnicode(reply.toString()), ctx.chatId());

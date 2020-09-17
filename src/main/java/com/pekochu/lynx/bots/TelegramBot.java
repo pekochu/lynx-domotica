@@ -3,12 +3,12 @@ package com.pekochu.lynx.bots;
 import com.pekochu.lynx.commands.telegram.BasicCommands;
 import com.pekochu.lynx.commands.telegram.DriveCommands;
 import com.pekochu.lynx.commands.telegram.GoogleOauthFlow;
-import com.pekochu.lynx.utilities.GoogleDriveService;
-import com.pekochu.lynx.utilities.TelegramService;
+import com.pekochu.lynx.utilities.BotPropertiesProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+
+import org.springframework.stereotype.Service;
 import org.telegram.abilitybots.api.bot.AbilityBot;
 import org.telegram.abilitybots.api.objects.Ability;
 import org.telegram.abilitybots.api.objects.Locality;
@@ -20,7 +20,7 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import javax.annotation.PostConstruct;
 
-@Component
+@Service
 public class TelegramBot extends AbilityBot {
 
     // Variables
@@ -33,13 +33,15 @@ public class TelegramBot extends AbilityBot {
     }
 
     @Autowired
-    public TelegramBot(TelegramService telegramService, GoogleDriveService googleDriveService){
-        super(telegramService.getToken(), telegramService.getUsername());
+    public TelegramBot(BotPropertiesProvider botPropertiesProvider){
+        super(botPropertiesProvider.getTelegramToken(), botPropertiesProvider.getTelegramUsername());
+        // Google OAuth2.0 commands flow
         googleOauthFlow = new GoogleOauthFlow(sender, db,
-                googleDriveService.getCliendId(), googleDriveService.getClientSecret());
+                botPropertiesProvider.getGoogleClientId(), botPropertiesProvider.getGoogleClientSecret());
 
+        // Google Drive API commands flow
         driveCommands = new DriveCommands(sender, db,
-                googleDriveService.getCliendId(), googleDriveService.getClientSecret());
+                botPropertiesProvider.getGoogleClientId(), botPropertiesProvider.getGoogleClientSecret());
     }
 
     @PostConstruct
@@ -71,7 +73,10 @@ public class TelegramBot extends AbilityBot {
                 .info("Autentíficarse con la API de Google.")
                 .locality(Locality.ALL)
                 .privacy(Privacy.PUBLIC)
-                .action(ctx -> googleOauthFlow.replyToOauth(ctx))
+                .action(ctx -> {
+                    //
+                    googleOauthFlow.replyToOauth(ctx);
+                })
                 .build();
     }
 
@@ -83,7 +88,10 @@ public class TelegramBot extends AbilityBot {
                 .info("Interactuar con la API de Google Drive con el bot.")
                 .locality(Locality.ALL)
                 .privacy(Privacy.PUBLIC)
-                .action(ctx -> driveCommands.replyToDrive(ctx))
+                .action(ctx -> {
+                    //
+                    driveCommands.replyToDrive(ctx);
+                })
                 .build();
     }
 
