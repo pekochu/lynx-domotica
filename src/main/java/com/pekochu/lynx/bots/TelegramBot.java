@@ -10,15 +10,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import org.springframework.stereotype.Service;
 import org.telegram.abilitybots.api.bot.AbilityBot;
-import org.telegram.abilitybots.api.objects.Ability;
-import org.telegram.abilitybots.api.objects.Locality;
-import org.telegram.abilitybots.api.objects.Privacy;
+import org.telegram.abilitybots.api.objects.*;
 import org.telegram.abilitybots.api.util.AbilityExtension;
+import org.telegram.abilitybots.api.util.AbilityUtils;
 import org.telegram.telegrambots.ApiContextInitializer;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
+import org.telegram.telegrambots.meta.api.methods.ActionType;
+import org.telegram.telegrambots.meta.api.methods.send.SendChatAction;
+import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import javax.annotation.PostConstruct;
+import java.util.function.Consumer;
 
 @Service
 public class TelegramBot extends AbilityBot {
@@ -37,11 +40,13 @@ public class TelegramBot extends AbilityBot {
         super(botPropertiesProvider.getTelegramToken(), botPropertiesProvider.getTelegramUsername());
         // Google OAuth2.0 commands flow
         googleOauthFlow = new GoogleOauthFlow(sender, db,
-                botPropertiesProvider.getGoogleClientId(), botPropertiesProvider.getGoogleClientSecret());
+                botPropertiesProvider.getGoogleClientId(),
+                botPropertiesProvider.getGoogleClientSecret());
 
         // Google Drive API commands flow
         driveCommands = new DriveCommands(sender, db,
-                botPropertiesProvider.getGoogleClientId(), botPropertiesProvider.getGoogleClientSecret());
+                botPropertiesProvider.getGoogleClientId(),
+                botPropertiesProvider.getGoogleClientSecret());
     }
 
     @PostConstruct
@@ -75,6 +80,10 @@ public class TelegramBot extends AbilityBot {
                 .privacy(Privacy.PUBLIC)
                 .action(ctx -> {
                     //
+                    SendChatAction sendChatAction = new SendChatAction();
+                    sendChatAction.setAction(ActionType.TYPING);
+                    sendChatAction.setChatId(ctx.chatId());
+                    silent.execute(sendChatAction);
                     googleOauthFlow.replyToOauth(ctx);
                 })
                 .build();
@@ -90,8 +99,13 @@ public class TelegramBot extends AbilityBot {
                 .privacy(Privacy.PUBLIC)
                 .action(ctx -> {
                     //
+                    SendChatAction sendChatAction = new SendChatAction();
+                    sendChatAction.setAction(ActionType.TYPING);
+                    sendChatAction.setChatId(ctx.chatId());
+                    silent.execute(sendChatAction);
                     driveCommands.replyToDrive(ctx);
                 })
+                // .reply(update -> driveCommands.replyToButtons(update), Flag.CALLBACK_QUERY, Flag.REPLY)
                 .build();
     }
 

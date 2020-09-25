@@ -23,7 +23,6 @@ public class BasicCommands implements AbilityExtension {
     }
 
     public Ability start(){
-
         SendChatAction sendChatAction = new SendChatAction();
         sendChatAction.setAction(ActionType.TYPING);
 
