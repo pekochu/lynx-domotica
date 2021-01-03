@@ -32,7 +32,7 @@ public class BasicCommands implements AbilityExtension {
                 .privacy(Privacy.PUBLIC)
                 .locality(Locality.ALL)
                 .action(ctx -> {
-                    sendChatAction.setChatId(ctx.chatId());
+                    sendChatAction.setChatId(String.valueOf(ctx.chatId()));
                     silent.execute(sendChatAction);
 
                     StringBuilder text = new StringBuilder();
@@ -53,7 +53,7 @@ public class BasicCommands implements AbilityExtension {
                 .privacy(Privacy.PUBLIC)
                 .locality(Locality.ALL)
                 .action(ctx -> {
-                    sendChatAction.setChatId(ctx.chatId());
+                    sendChatAction.setChatId(String.valueOf(ctx.chatId()));
                     silent.execute(sendChatAction);
 
                     StringBuilder text = new StringBuilder();
@@ -97,7 +97,7 @@ public class BasicCommands implements AbilityExtension {
                 .locality(Locality.ALL)
                 .privacy(Privacy.PUBLIC)
                 .action(ctx -> {
-                    sendChatAction.setChatId(ctx.chatId());
+                    sendChatAction.setChatId(String.valueOf(ctx.chatId()));
                     silent.execute(sendChatAction);
 
                     StringBuilder reply = new StringBuilder();

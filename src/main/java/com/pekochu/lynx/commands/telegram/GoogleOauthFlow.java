@@ -20,8 +20,13 @@ import com.vdurmont.emoji.EmojiParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.telegram.abilitybots.api.db.DBContext;
+import org.telegram.abilitybots.api.objects.Ability;
+import org.telegram.abilitybots.api.objects.Locality;
 import org.telegram.abilitybots.api.objects.MessageContext;
+import org.telegram.abilitybots.api.objects.Privacy;
 import org.telegram.abilitybots.api.sender.MessageSender;
+import org.telegram.abilitybots.api.sender.SilentSender;
+import org.telegram.abilitybots.api.util.AbilityExtension;
 import org.telegram.telegrambots.meta.api.methods.ActionType;
 import org.telegram.telegrambots.meta.api.methods.send.SendChatAction;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -33,11 +38,14 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.*;
 
-public class GoogleOauthFlow {
+public class GoogleOauthFlow implements AbilityExtension {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(TelegramBot.class.getCanonicalName());
 
-    private final MessageSender sender;
+    private final DBContext db;
+    private MessageSender sender;
+    private SilentSender silent;
+
     private final Map<Long, Map<String, String>> driveCredentials;
     private Map<String, String> storeCredentials;
     private final Map<Long, String> driveStates;
@@ -45,31 +53,55 @@ public class GoogleOauthFlow {
     private final String GOOGLE_CLIENT;
     private final String GOOGLE_SECRET;
 
-    public GoogleOauthFlow(MessageSender sender, DBContext db, String client, String secret) {
+    public GoogleOauthFlow(DBContext db, MessageSender sender, SilentSender silent, String client, String secret) {
+        this.db = db;
         this.sender = sender;
+        this.silent = silent;
+        // Maps
         driveCredentials = db.getMap("DRIVE_CREDENTIALS");
         driveStates = db.getMap("DRIVE_AUTH_STATES");
+        // Google secrets
         this.GOOGLE_CLIENT = client;
         this.GOOGLE_SECRET = secret;
+    }
+
+    public Ability googleOauthAbility(){
+        return Ability
+                .builder()
+                .name("googleauth")
+                .info("Autentíficarse con la API de Google.")
+                .locality(Locality.ALL)
+                .privacy(Privacy.PUBLIC)
+                .action(ctx -> {
+                    //
+                    SendChatAction sendChatAction = new SendChatAction();
+                    sendChatAction.setAction(ActionType.TYPING);
+                    sendChatAction.setChatId(String.valueOf(ctx.chatId()));
+                    silent.execute(sendChatAction);
+                    replyToOauth(ctx);
+                }).build();
     }
 
     public void replyToOauth(MessageContext ctx) {
         StringBuilder text = new StringBuilder();
         String currentState = driveStates.get(ctx.chatId());
         String[] args = ctx.arguments();
+        SendMessage snd = null;
+        LOGGER.info("ChatId: {}\tEstado: {}", ctx.chatId(), currentState);
 
         try {
             if (args.length < 1) {
-                sender.execute(new SendMessage()
-                        .setText(EmojiParser.parseToUnicode("Argumentos disponibles para este comando:\n\n" +
-                                "<code>/googleauth url</code>\n<i>Te genera un URL para otorgar permisos " +
-                                "de Google Drive al bot.</i>\n\n" +
-                                "<code>/googleauth code &lt;tu codigo&gt;</code>\n<i>Regitramos tu código " +
-                                "para obtener un token e interactuar con tu cuenta de Google Drive</i>\n\n" +
-                                "Usa <code>/commands</code> para más información. :relaxed:"))
-                        .enableHtml(true)
-                        .setChatId(ctx.chatId()));
+                snd = new SendMessage();
+                snd.enableHtml(true);
+                snd.setText(EmojiParser.parseToUnicode("Argumentos disponibles para este comando:\n\n" +
+                        "<code>/googleauth url</code>\n<i>Te genera un URL para otorgar permisos " +
+                        "de Google Drive al bot.</i>\n\n" +
+                        "<code>/googleauth code &lt;tu codigo&gt;</code>\n<i>Regitramos tu código " +
+                        "para obtener un token e interactuar con tu cuenta de Google Drive</i>\n\n" +
+                        "Usa <code>/commands</code> para más información. :relaxed:"));
+                snd.setChatId(String.valueOf(ctx.chatId()));
 
+                sender.execute(snd);
                 driveStates.put(ctx.chatId(), "TRYING");
             }else if(args[0].equals("url")){
                 if(currentState == null){
@@ -77,35 +109,42 @@ public class GoogleOauthFlow {
                     driveStates.put(ctx.chatId(), "URL_GENERATED");
                 }else{
                     if(currentState.equals("USER_SAVED")){
-                        sender.execute(new SendMessage()
-                                .setText("Parece que ya te has autenticado. ¿Quieres una nueva URL de autenticación? " +
-                                        "Vuelve a enviar este comando (<code>/googleauth url</code>) " +
-                                        EmojiParser.parseToUnicode("si quieres otra URL. :smile:"))
-                                .enableHtml(true)
-                                .setChatId(ctx.chatId()));
-                        driveStates.put(ctx.chatId(), "MAYBE_TRYING");
-                    }else if(currentState.equals("MAYBE_TRYING")){
+                        snd = new SendMessage();
+                        snd.enableHtml(true);
+                        snd.setText("Parece que ya te has autenticado. ¿Quieres una nueva URL de autenticación? " +
+                                "Vuelve a enviar este comando (<code>/googleauth url</code>) " +
+                                EmojiParser.parseToUnicode("si quieres otra URL. :smile:"));
+                        snd.setChatId(String.valueOf(ctx.chatId()));
+
+                        sender.execute(snd);
+                        driveStates.put(ctx.chatId(), "RETRYING");
+                    }else if(currentState.equals("TRYING") || currentState.equals("RETRYING")){
                         requestUrl(ctx);
                         driveStates.put(ctx.chatId(), "URL_GENERATED");
                     }
                 }
             }else if(args[0].equals("code")){
                 if(currentState == null){
-                    sender.execute(new SendMessage().setText(EmojiParser.parseToUnicode("Parece que no has " +
+                    snd = new SendMessage();
+                    snd.enableHtml(true);
+                    snd.setText(EmojiParser.parseToUnicode("Parece que no has " +
                             "solicitado un URL de autenticación. Por favor, solicitalo usando el comando " +
-                            "<code>/googleauth url</code>. :thinking:"))
-                            .enableHtml(true)
-                            .setChatId(ctx.chatId()));
+                            "<code>/googleauth url</code>. :thinking:"));
+                    snd.setChatId(String.valueOf(ctx.chatId()));
+
+                    sender.execute(snd);
                 }else{
-                    if(currentState.equals("URL_GENERATED") ||
-                            currentState.equals("MAYBE_TRYING")){
+                    if(currentState.equals("URL_GENERATED")){
                         storeCode(ctx, args[1]);
                     }else{
-                        sender.execute(new SendMessage().setText(EmojiParser.parseToUnicode("Parece que no has " +
+                        snd = new SendMessage();
+                        snd.enableHtml(true);
+                        snd.setText(EmojiParser.parseToUnicode("Parece que no has " +
                                 "solicitado un URL de autenticación. Por favor, solicitalo usando el comando " +
-                                "<code>/googleauth url</code>. :thinking:"))
-                                .enableHtml(true)
-                                .setChatId(ctx.chatId()));
+                                "<code>/googleauth url</code>. :thinking:"));
+                        snd.setChatId(String.valueOf(ctx.chatId()));
+
+                        sender.execute(snd);
                     }
                 }
             }
@@ -115,12 +154,14 @@ public class GoogleOauthFlow {
             LOGGER.error(e.getMessage());
 
             try{
-                sender.execute(new SendMessage()
-                        .setText(EmojiParser.parseToUnicode("Ha ocurrido un error inesperado. :disappointed:" +
-                                "\n:thinking: Detalles:\n\n<pre>"+e.getMessage()+"</pre>" +
-                                "\n\nNo te preocupes, el admin ya ha sido notificado del error. :hugs:"))
-                        .enableHtml(true)
-                        .setChatId(ctx.chatId()));
+                snd = new SendMessage();
+                snd.enableHtml(true);
+                snd.setText(EmojiParser.parseToUnicode("Ha ocurrido un error inesperado. :disappointed:" +
+                        "\n:thinking: Detalles:\n\n<pre>"+e.getMessage()+"</pre>" +
+                        "\n\nNo te preocupes, el admin ya ha sido notificado del error. :hugs:"));
+                snd.setChatId(String.valueOf(ctx.chatId()));
+
+                sender.execute(snd);
             }catch (TelegramApiException ex){
                 LOGGER.error(ex.getMessage(), ex);
             }
@@ -138,17 +179,26 @@ public class GoogleOauthFlow {
         List<List<InlineKeyboardButton>> Buttons = new ArrayList<>();
         InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup();
         List<InlineKeyboardButton> rowInline = new ArrayList<>();
-        rowInline.add(new InlineKeyboardButton().setText("URL de autorización").setUrl(url));
+
+        InlineKeyboardButton inlineUrlButton = new InlineKeyboardButton();
+        inlineUrlButton.setText("URL de autorización");
+        inlineUrlButton.setUrl(url);
+        rowInline.add(inlineUrlButton);
+
         Buttons.add(rowInline);
         inlineKeyboard.setKeyboard(Buttons);
 
-        sender.execute(new SendMessage()
-                .setText("Da click en el enlace para obtener tu código de autorización." +
-                        " Después vuelve aquí y escribe <code>/gogoleauth code &lt;codigo&gt;</code> para" +
-                        " poder utilizarlo aquí.")
-                .enableHtml(true)
-                .setReplyMarkup(inlineKeyboard)
-                .setChatId(ctx.chatId()));
+        SendMessage snd = new SendMessage();
+        snd.enableHtml(true);
+        snd.setText("Da click en el enlace para obtener tu código de autorización." +
+                " Después vuelve aquí y escribe <code>/gogoleauth code &lt;codigo&gt;</code> para" +
+                " poder utilizarlo aquí.");
+        snd.setChatId(String.valueOf(ctx.chatId()));
+        snd.setReplyMarkup(inlineKeyboard);
+
+        LOGGER.info("URL generado: {}", url);
+
+        sender.execute(snd);
     }
 
     private void storeCode(MessageContext ctx, String code) throws TelegramApiException,
@@ -171,9 +221,12 @@ public class GoogleOauthFlow {
         storeCredentials.put("EXPIRY", response.getExpiresInSeconds().toString());
         driveCredentials.put(ctx.chatId(), storeCredentials);
 
-        sender.execute(new SendMessage()
-                .setText(EmojiParser.parseToUnicode("Código guardado con éxito. :wink:"))
-                .enableHtml(true)
-                .setChatId(ctx.chatId()));
+        SendMessage snd = new SendMessage();
+        snd.enableHtml(true);
+        snd.setText(EmojiParser.parseToUnicode("Código guardado con éxito. :wink:"));
+        snd.setChatId(String.valueOf(ctx.chatId()));
+
+        driveStates.put(ctx.chatId(), "USER_SAVED");
+        sender.execute(snd);
     }
 }

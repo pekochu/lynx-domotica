@@ -29,12 +29,12 @@
         <dependency>
             <groupId>org.hibernate</groupId>
             <artifactId>hibernate-validator</artifactId>
-            <version>7.0.0.CR1</version>
+            <version>7.0.0.Alpha6</version>
         </dependency>
         <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
-            <version>20201115</version>
+            <version>20200518</version>
         </dependency>
         <dependency>
             <groupId>org.jsoup</groupId>
@@ -44,17 +44,17 @@
         <dependency>
             <groupId>org.telegram</groupId>
             <artifactId>telegrambots</artifactId>
-            <version>5.0.1</version>
+            <version>4.9.1</version>
         </dependency>
         <dependency>
             <groupId>org.telegram</groupId>
             <artifactId>telegrambots-abilities</artifactId>
-            <version>5.0.1</version>
+            <version>4.9.1</version>
         </dependency>
         <dependency>
             <groupId>org.javacord</groupId>
             <artifactId>javacord</artifactId>
-            <version>3.1.1</version>
+            <version>3.0.6</version>
             <type>pom</type>
         </dependency>
         <dependency>
@@ -71,12 +71,12 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
-            <version>2.12.0</version>
+            <version>2.11.2</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-joda</artifactId>
-            <version>2.12.0</version>
+            <version>2.11.2</version>
         </dependency>
         <dependency>
             <groupId>org.seleniumhq.selenium</groupId>
@@ -101,17 +101,17 @@
         <dependency>
             <groupId>com.google.apis</groupId>
             <artifactId>google-api-services-drive</artifactId>
-            <version>v3-rev20201130-1.31.0</version>
+            <version>v3-rev20200813-1.30.10</version>
         </dependency>
         <dependency>
             <groupId>com.google.api-client</groupId>
             <artifactId>google-api-client</artifactId>
-            <version>1.31.1</version>
+            <version>1.30.10</version>
         </dependency>
         <dependency>
             <groupId>com.google.oauth-client</groupId>
             <artifactId>google-oauth-client-jetty</artifactId>
-            <version>1.31.2</version>
+            <version>1.31.0</version>
         </dependency>
 
 
