@@ -177,16 +177,16 @@ public class DriveCommands implements AbilityExtension {
                                 new HashMap<>() : drivePendings.get(ctx.chatId());
 
                         if(storePendings.size() == 0){
-                            text.append("No tienes archivos pendientes para copiar.");
+                            text.append("No tienes archivos pendientes para copiar. :alien:");
                         }else{
-                            text.append("<b>Lista de los archivos que están pendientes</b>:\n\n");
+                            text.append("<b>Lista de los archivos que están pendientes</b>:\n");
                             for (Map.Entry<Long, String> entry : storePendings.entrySet()) {
                                 Date fileDate = new Date(entry.getKey() * 1000L);
                                 File filePending = service.files()
                                         .get(entry.getValue())
                                         .setFields(DRIVE_FIELDS)
                                         .execute();
-                                text.append(String.format("Archivo <b>\"%s\" (%s)</b> creado el <b>%s</b>",
+                                text.append(String.format("\n:pushpin: Archivo <b>\"%s\" (%s)</b> creado el <b>%s</b>",
                                         filePending.getName(), Common.humanReadableByteCountBin(filePending.getSize()),
                                         sdf.format(fileDate)));
                             }
@@ -550,7 +550,7 @@ public class DriveCommands implements AbilityExtension {
                 snd.enableHtml(true);
 
                 if(dataSplitted[1].equals("PENDINGS_COPY")){
-                    edited.setText("Copiando...");
+                    edited.setText(EmojiParser.parseToUnicode("Copiando... :clock130:"));
                     edited.setReplyMarkup(null);
                     sender.execute(edited);
 
@@ -562,6 +562,7 @@ public class DriveCommands implements AbilityExtension {
                         try{
                             message.append(fileCopy(
                                     service, filePending.getId(), new String[]{"", filePending.getId()}).toString());
+                            storePendings.remove(entry.getKey());
                         }catch(SecurityException | IOException d){
                             message.append(String.format("Archivo <b>\"%s\" (%s)</b> aún no puede copiarse porque ",
                                     filePending.getName(), Common.humanReadableByteCountBin(filePending.getSize())));
@@ -570,17 +571,17 @@ public class DriveCommands implements AbilityExtension {
                         }
                     }
 
-                    message.append("Proceso de copiado terminado.");
+                    message.append("Proceso de copiado terminado. :relieved:");
                     snd.setText(EmojiParser.parseToUnicode(message.toString()));
                     snd.setChatId(String.valueOf(chatId));
                     snd.setReplyToMessageId(update.getCallbackQuery().getMessage().getMessageId());
                     sender.execute(snd);
                 }else if(dataSplitted[1].equals("PENDINGS_DELETE")){
-                    edited.setText(EmojiParser.parseToUnicode("Eliminando... :clock130:\n\n"));
+                    edited.setText(EmojiParser.parseToUnicode("Eliminando... :clock130:"));
                     edited.setReplyMarkup(null);
                     sender.execute(edited);
 
-                    message.append(String.format("Proceso de limpieza terminado.\nEliminados <b>%d archivos</b>.",
+                    message.append(String.format("Proceso de limpieza terminado. :relieved:\nEliminados <b>%d archivos</b>.",
                             storePendings.size()));
                     storePendings.clear();
                     message.append(" :wastebasket:");

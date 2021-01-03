@@ -6,7 +6,7 @@
 
     <groupId>com.pekochu</groupId>
     <artifactId>lynx</artifactId>
-    <version>1.0</version>
+    <version>1.0.1</version>
     <name>Lynx Domotics</name>
 
     <parent>
