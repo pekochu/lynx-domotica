@@ -374,15 +374,14 @@ public class DriveCommands implements AbilityExtension {
         } catch (TelegramApiException e) {
             LOGGER.error(e.getMessage(), e);
         } catch (GeneralSecurityException | IOException e) {
-            LOGGER.warn(e.getMessage());
+            LOGGER.error(e.getMessage());
 
             try{
                 // get code point of {
                 int jsonStartsAt = e.getMessage().indexOf(123);
                 JSONObject jsonDriveError = new JSONObject(e.getMessage().substring(jsonStartsAt));
                 JSONObject jsonDriveReasons = jsonDriveError.getJSONArray("errors").getJSONObject(0);
-                LOGGER.info(String.format("Drive error JSON: %s", jsonDriveError.toString()));
-                LOGGER.info(String.format("Reasons error JSON: %s", jsonDriveReasons.toString()));
+                LOGGER.error(String.format("Reasons error JSON: %s", jsonDriveReasons.toString()));
 
                 snd = new SendMessage();
                 snd.enableHtml(true);
@@ -439,7 +438,10 @@ public class DriveCommands implements AbilityExtension {
             File dstFile = new File();
             dstFile.setName(text.toString());
             dstFile.setParents(Collections.singletonList("root"));
-            File finalFile = service.files().copy(parentFile.getId(), dstFile).execute();
+            File finalFile = service.files().copy(parentFile.getId(), dstFile)
+                    .setSupportsAllDrives(true)
+                    .setSupportsTeamDrives(true)
+                    .execute();
 
             message.append(String.format("El archivo \"<b>%s</b>\" ha sido copiado con éxito. ",
                     finalFile.getName()));
@@ -450,12 +452,17 @@ public class DriveCommands implements AbilityExtension {
                 File parentFile = service.files()
                         .get(sid)
                         .setFields(DRIVE_FIELDS)
+                        .setSupportsAllDrives(true)
+                        .setSupportsTeamDrives(true)
                         .execute();
 
                 File dstFile = new File();
                 dstFile.setName(parentFile.getName());
                 dstFile.setParents(Collections.singletonList("root"));
-                File finalFile = service.files().copy(parentFile.getId(), dstFile).execute();
+                File finalFile = service.files().copy(parentFile.getId(), dstFile)
+                        .setSupportsAllDrives(true)
+                        .setSupportsTeamDrives(true)
+                        .execute();
 
                 message.append(String.format("El archivo \"<b>%s</b>\" ha sido copiado con éxito. ",
                         finalFile.getName()));
@@ -550,6 +557,7 @@ public class DriveCommands implements AbilityExtension {
                 snd.enableHtml(true);
 
                 if(dataSplitted[1].equals("PENDINGS_COPY")){
+                    List<Long> idsCopied = new ArrayList<>();
                     edited.setText(EmojiParser.parseToUnicode("Copiando... :clock130:"));
                     edited.setReplyMarkup(null);
                     sender.execute(edited);
@@ -560,9 +568,9 @@ public class DriveCommands implements AbilityExtension {
                                 .setFields(DRIVE_FIELDS)
                                 .execute();
                         try{
-                            message.append(fileCopy(
-                                    service, filePending.getId(), new String[]{"", filePending.getId()}).toString());
-                            storePendings.remove(entry.getKey());
+                            message.append(fileCopy(service, filePending.getId(),
+                                    new String[]{"", filePending.getId()}).toString());
+                            idsCopied.add(entry.getKey());
                         }catch(SecurityException | IOException d){
                             message.append(String.format("Archivo <b>\"%s\" (%s)</b> aún no puede copiarse porque ",
                                     filePending.getName(), Common.humanReadableByteCountBin(filePending.getSize())));
@@ -572,9 +580,11 @@ public class DriveCommands implements AbilityExtension {
                     }
 
                     message.append("Proceso de copiado terminado. :relieved:");
+                    for (Long id : idsCopied) storePendings.remove(id);
+                    drivePendings.put(chatId, storePendings);
                     snd.setText(EmojiParser.parseToUnicode(message.toString()));
                     snd.setChatId(String.valueOf(chatId));
-                    snd.setReplyToMessageId(update.getCallbackQuery().getMessage().getMessageId());
+                    snd.setReplyToMessageId(edited.getMessageId());
                     sender.execute(snd);
                 }else if(dataSplitted[1].equals("PENDINGS_DELETE")){
                     edited.setText(EmojiParser.parseToUnicode("Eliminando... :clock130:"));
@@ -584,11 +594,12 @@ public class DriveCommands implements AbilityExtension {
                     message.append(String.format("Proceso de limpieza terminado. :relieved:\nEliminados <b>%d archivos</b>.",
                             storePendings.size()));
                     storePendings.clear();
+                    drivePendings.put(chatId, storePendings);
                     message.append(" :wastebasket:");
 
                     snd.setText(EmojiParser.parseToUnicode(message.toString()));
                     snd.setChatId(String.valueOf(chatId));
-                    snd.setReplyToMessageId(update.getCallbackQuery().getMessage().getMessageId());
+                    snd.setReplyToMessageId(edited.getMessageId());
                     sender.execute(snd);
                 }
             }
