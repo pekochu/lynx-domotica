@@ -12,6 +12,7 @@ import com.google.api.services.drive.model.User;
 import com.pekochu.lynx.bots.TelegramBot;
 import com.pekochu.lynx.utilities.Common;
 import com.vdurmont.emoji.EmojiParser;
+import org.javacord.api.entity.emoji.Emoji;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -172,10 +173,15 @@ public class DriveCommands implements AbilityExtension {
                         snd = new SendMessage();
                         snd.enableHtml(true);
 
+                        // pagination
+                        int i = 0;
+                        int filesPending = 0;
+
                         Map<Long, String> storePendings;
                         storePendings = drivePendings.get(ctx.chatId()) == null ?
                                 new HashMap<>() : drivePendings.get(ctx.chatId());
 
+                        int filesToDelete = 0;
                         List<Long> idsToDelete = new ArrayList<>();
 
                         if(storePendings.size() == 0){
@@ -183,7 +189,15 @@ public class DriveCommands implements AbilityExtension {
                         }else{
                             text.append("<b>Lista de los archivos que están pendientes</b>:\n");
                             for (Map.Entry<Long, String> entry : storePendings.entrySet()) {
-                                Date fileDate = new Date(entry.getKey() * 1000L);
+                                Date fileDate = null;
+                                String keyFixed = Long.toString(entry.getKey());
+                                if(keyFixed.length() >= 10){
+                                    keyFixed = keyFixed.substring(0, 10);
+                                    fileDate = new Date(Long.parseLong(keyFixed) * 1000L);
+                                }else{
+                                    fileDate = new Date(entry.getKey() * 1000L);
+                                }
+
                                 boolean founded;
                                 String fileName = "";
                                 Long fileSize = 0L;
@@ -194,6 +208,7 @@ public class DriveCommands implements AbilityExtension {
                                             .setSupportsAllDrives(true)
                                             .setSupportsTeamDrives(true)
                                             .execute();
+                                    // get if founded
                                     founded = true;
                                     fileName = filePending.getName();
                                     fileSize = filePending.getSize();
@@ -203,29 +218,49 @@ public class DriveCommands implements AbilityExtension {
                                 }
 
                                 if(founded){
-                                    text.append(String.format("\n:pushpin: Archivo <b>\"%s\" (%s)</b> creado el <b>%s</b>",
-                                            fileName, Common.humanReadableByteCountBin(fileSize),
-                                            sdf.format(fileDate)));
+                                    if(filesPending < 10){
+                                        text.append("\n:pushpin: ");
+                                        text.append(String.format("<b>\"%s\" (%s)</b>, creado el <b>%s</b>.",
+                                                fileName, Common.humanReadableByteCountBin(fileSize),
+                                                sdf.format(fileDate)));
+                                        i++;
+                                    }
+                                    filesPending++;
                                 }else{
-                                    text.append(String.format("\n:no_entry_sign: Archivo <b>\"%s\"</b>, creado el <b>%s</b>",
-                                            entry.getValue(), sdf.format(fileDate)));
-                                    text.append("No pudo ser encontrado en Google Drive.");
-                                    text.append("Posiblemente haya sido eliminado por Copyright,");
-                                    text.append(" DMCA Strike o simplemente lo eliminó el dueño. :shrug:\n");
-                                    text.append("Será eliminado de la lista de pendientes.\n\n");
                                     idsToDelete.add(entry.getKey());
+                                    filesToDelete++;
                                 }
                             }
 
+                            text.append(String.format("\n\nMostrando %d de %d", i, storePendings.size()));
+
                             inlineKeyboardMarkup = new InlineKeyboardMarkup();
                             keyboardAllRows = new ArrayList<>();
+                            keyboardRow = new ArrayList<>();
+                            InlineKeyboardButton keyButton = new InlineKeyboardButton();
+                            keyButton.setText(EmojiParser.parseToUnicode("Siguiente página :arrow_right:"));
+                            keyButton.setCallbackData("DRIVE:PENDINGS_NEXT_PAGE:2");
+                            keyboardRow.add(keyButton);
+                            keyboardAllRows.add(keyboardRow);
+                            inlineKeyboardMarkup.setKeyboard(keyboardAllRows);
+                            snd.setReplyMarkup(inlineKeyboardMarkup);
+                        }
 
+                        snd.setText(EmojiParser.parseToUnicode(text.toString()));
+                        snd.setChatId(String.valueOf(ctx.chatId()));
+                        sender.execute(snd);
+
+                        if(filesPending > 0){
+                            snd = new SendMessage();
+                            snd.enableHtml(true);
+                            // keyboard for copying or deleting
+                            inlineKeyboardMarkup = new InlineKeyboardMarkup();
+                            keyboardAllRows = new ArrayList<>();
                             keyboardRow = new ArrayList<>();
                             InlineKeyboardButton keyButton = new InlineKeyboardButton();
                             keyButton.setText("Intentar copiar los archivos");
                             keyButton.setCallbackData("DRIVE:PENDINGS_COPY");
                             keyboardRow.add(keyButton);
-
                             keyButton = new InlineKeyboardButton();
                             keyButton.setText("Eliminar archivos");
                             keyButton.setCallbackData("DRIVE:PENDINGS_DELETE");
@@ -233,15 +268,25 @@ public class DriveCommands implements AbilityExtension {
                             keyboardAllRows.add(keyboardRow);
                             inlineKeyboardMarkup.setKeyboard(keyboardAllRows);
                             snd.setReplyMarkup(inlineKeyboardMarkup);
+                            // delete the not found ones
+                            for(Long key : idsToDelete) storePendings.remove(key);
+                            drivePendings.put(ctx.chatId(), storePendings);
+
+                            text = new StringBuilder(String.format("¿Qué quieres hacer con estos %d archivos?",
+                                    storePendings.size()));
+
+                            if(filesToDelete > 0){
+                                text.append("\n\nPor cierto...\n");
+                                text.append(String.format(":no_entry: No pude encontrar <b>%d archivos</b>.\n",
+                                        filesToDelete));
+                                text.append("Fueron eliminados de tu lista de pendientes.");
+                            }
+                            snd.setText(EmojiParser.parseToUnicode(text.toString()));
+                            snd.setChatId(String.valueOf(ctx.chatId()));
+
+                            sender.execute(snd);
                         }
 
-                        for(Long key : idsToDelete) storePendings.remove(key);
-                        drivePendings.put(ctx.chatId(), storePendings);
-
-                        snd.setText(EmojiParser.parseToUnicode(text.toString()));
-                        snd.setChatId(String.valueOf(ctx.chatId()));
-
-                        sender.execute(snd);
 
                         break;
                     case "account":
@@ -565,6 +610,13 @@ public class DriveCommands implements AbilityExtension {
         GoogleCredential credential;
         Drive service;
 
+        InlineKeyboardMarkup inlineKeyboardMarkup;
+        List<List<InlineKeyboardButton>> keyboardAllRows;
+        List<InlineKeyboardButton> keyboardRow;
+
+        SimpleDateFormat sdf = new SimpleDateFormat("d 'de' MMMM 'de' y 'a las' HH:mm:ss",
+                new Locale("es", "mx"));
+
         try {
             String replyData = update.getCallbackQuery().getData();
             String[] dataSplitted = replyData.split(":");
@@ -603,12 +655,17 @@ public class DriveCommands implements AbilityExtension {
 
                 if(dataSplitted[1].equals("PENDINGS_COPY")){
                     List<Long> idsCopied = new ArrayList<>();
-                    edited.setText(EmojiParser.parseToUnicode("Copiando... :clock130:"));
+                    List<Long> idsToDelete = new ArrayList<>();
+                    int filesCantCopy = 0;
+
+                    message.append(String.format("Intentando copiar %d archivos... :clock130:", storePendings.size()));
+                    edited.setText(EmojiParser.parseToUnicode(message.toString()));
                     edited.setReplyMarkup(null);
                     sender.execute(edited);
+                    message.delete(0, message.length());
 
                     for (Map.Entry<Long, String> entry : storePendings.entrySet()) {
-                        boolean founded = false;
+                        boolean founded;
                         String fileName = "", fileId = "";
                         Long fileSize = 0L;
                         try{
@@ -630,37 +687,39 @@ public class DriveCommands implements AbilityExtension {
                         if(founded){
                             try{
                                 fileCopy(service, fileId, new String[]{"", fileId});
-                                message.append(String.format("Archivo <b>\"%s\" (%s)</b> copiado con éxito. ",
+                                message.append(":heavy_check_mark: ");
+                                message.append(String.format("Archivo <b>\"%s\" (%s)</b> copiado con éxito.\n\n",
                                         fileName, Common.humanReadableByteCountBin(fileSize)));
-                                message.append(":white_check_mark:\n\n");
                                 idsCopied.add(entry.getKey());
                             }catch(SecurityException | IOException d){
-                                message.append(String.format("Archivo <b>\"%s\" (%s)</b> aún no puede copiarse porque ",
-                                        fileName, Common.humanReadableByteCountBin(fileSize)));
-                                message.append("se ha excedido la cuota del archivo o no tienes permisos para copiarlo.");
-                                message.append(" :no_entry_sign:\n\n");
+                                filesCantCopy++;
                             }
                         }else{
-                            message.append(String.format("Archivo <b>\"%s\" no pudo ser encontrado. ", entry.getValue()));
-                            message.append("Posiblemente haya sido eliminado por Copyright, DMCA Strike o simplemente");
-                            message.append(" lo eliminó el dueño. :shrug:\n\n");
+                            message.append(String.format(":shrug: Archivo <b>\"%s\" no pudo ser encontrado.\n\n",
+                                    entry.getValue()));
+                            idsToDelete.add(entry.getKey());
                         }
                     }
 
+                    message.append(String.format(":no_entry: <b>%d archivos</b> no pudieron ser copiados.\n",
+                            filesCantCopy));
                     message.append("Proceso de copiado terminado. :relieved:");
                     for (Long id : idsCopied) storePendings.remove(id);
+                    for (Long id : idsToDelete) storePendings.remove(id);
                     drivePendings.put(chatId, storePendings);
                     snd.setText(EmojiParser.parseToUnicode(message.toString()));
                     snd.setChatId(String.valueOf(chatId));
                     snd.setReplyToMessageId(edited.getMessageId());
                     sender.execute(snd);
                 }else if(dataSplitted[1].equals("PENDINGS_DELETE")){
-                    edited.setText(EmojiParser.parseToUnicode("Eliminando... :clock130:"));
+                    message.append(String.format("Eliminando %d archivos... :clock130:", storePendings.size()));
+                    edited.setText(EmojiParser.parseToUnicode(message.toString()));
                     edited.setReplyMarkup(null);
                     sender.execute(edited);
+                    message.delete(0, message.length());
 
-                    message.append(String.format("Proceso de limpieza terminado. :relieved:\nEliminados <b>%d archivos</b>.",
-                            storePendings.size()));
+                    message.append("Proceso de limpieza terminado. :relieved:\n");
+                    message.append(String.format("Eliminados <b>%d archivos</b>.", storePendings.size()));
                     storePendings.clear();
                     drivePendings.put(chatId, storePendings);
                     message.append(" :wastebasket:");
@@ -669,6 +728,171 @@ public class DriveCommands implements AbilityExtension {
                     snd.setChatId(String.valueOf(chatId));
                     snd.setReplyToMessageId(edited.getMessageId());
                     sender.execute(snd);
+                }else if(dataSplitted[1].equals("PENDINGS_NEXT_PAGE")){
+                    edited.enableHtml(true);
+
+                    int limit = Integer.parseInt(dataSplitted[2])*10;
+                    int page = Integer.parseInt(dataSplitted[2]);
+                    int offset = limit-10;
+                    int filesPending = 0, filesToDelete = 0, i = 0;
+                    List<Long> idsToDelete = new ArrayList<>();
+
+                    for (Map.Entry<Long, String> entry : storePendings.entrySet()) {
+                        Date fileDate;
+                        String keyFixed = Long.toString(entry.getKey());
+                        if(keyFixed.length() >= 10){
+                            keyFixed = keyFixed.substring(0, 10);
+                            fileDate = new Date(Long.parseLong(keyFixed) * 1000L);
+                        }else{
+                            fileDate = new Date(entry.getKey() * 1000L);
+                        }
+
+                        boolean founded;
+                        String fileName = "";
+                        Long fileSize = 0L;
+                        try{
+                            File filePending = service.files()
+                                    .get(entry.getValue())
+                                    .setFields(DRIVE_FIELDS)
+                                    .setSupportsAllDrives(true)
+                                    .setSupportsTeamDrives(true)
+                                    .execute();
+                            founded = true;
+                            fileName = filePending.getName();
+                            fileSize = filePending.getSize();
+                        }catch(SecurityException | IOException d){
+                            LOGGER.error(d.getMessage());
+                            filesToDelete++;
+                            idsToDelete.add(entry.getKey());
+                            founded = false;
+                        }
+
+                        if(founded){
+                            if(filesPending >= offset && filesPending < limit){
+                                message.append("\n:pushpin: ");
+                                message.append(String.format("<b>\"%s\" (%s)</b>, creado el <b>%s</b>.",
+                                        fileName, Common.humanReadableByteCountBin(fileSize),
+                                        sdf.format(fileDate)));
+                                i++;
+                            }
+                            filesPending++;
+                        }
+                    }
+
+                    if(filesToDelete > 0){
+                        for(Long key : idsToDelete) storePendings.remove(key);
+                        drivePendings.put(chatId, storePendings);
+                    }
+
+                    message.append(String.format("\n\nMostrando %d - %d de %d", offset,
+                            offset+i, storePendings.size()));
+
+                    inlineKeyboardMarkup = new InlineKeyboardMarkup();
+                    keyboardAllRows = new ArrayList<>();
+                    keyboardRow = new ArrayList<>();
+
+                    InlineKeyboardButton keyButton;
+                    if(page > 1) {
+                        keyButton = new InlineKeyboardButton();
+                        keyButton.setText(EmojiParser.parseToUnicode(":arrow_left: Página anterior"));
+                        keyButton.setCallbackData(String.format("DRIVE:PENDINGS_PREVIOUS_PAGE:%d", page-1));
+                        keyboardRow.add(keyButton);
+                    }
+
+                    if(limit < storePendings.size()){
+                        keyButton = new InlineKeyboardButton();
+                        keyButton.setText(EmojiParser.parseToUnicode("Siguiente página :arrow_right:"));
+                        keyButton.setCallbackData(String.format("DRIVE:PENDINGS_NEXT_PAGE:%d", page+1));
+                        keyboardRow.add(keyButton);
+                    }
+
+                    keyboardAllRows.add(keyboardRow);
+                    inlineKeyboardMarkup.setKeyboard(keyboardAllRows);
+                    edited.setText(EmojiParser.parseToUnicode(message.toString()));
+                    edited.setReplyMarkup(inlineKeyboardMarkup);
+                    sender.execute(edited);
+                }else if(dataSplitted[1].equals("PENDINGS_PREVIOUS_PAGE")){
+                    edited.enableHtml(true);
+                    int limit = Integer.parseInt(dataSplitted[2])*10;
+                    int page = Integer.parseInt(dataSplitted[2]);
+                    int offset = limit-10;
+                    int filesPending = 0, filesToDelete = 0, i = 0;
+                    List<Long> idsToDelete = new ArrayList<>();
+
+                    for (Map.Entry<Long, String> entry : storePendings.entrySet()) {
+                        Date fileDate;
+                        String keyFixed = Long.toString(entry.getKey());
+                        if(keyFixed.length() >= 10){
+                            keyFixed = keyFixed.substring(0, 10);
+                            fileDate = new Date(Long.parseLong(keyFixed) * 1000L);
+                        }else{
+                            fileDate = new Date(entry.getKey() * 1000L);
+                        }
+
+                        boolean founded;
+                        String fileName = "";
+                        Long fileSize = 0L;
+                        try{
+                            File filePending = service.files()
+                                    .get(entry.getValue())
+                                    .setFields(DRIVE_FIELDS)
+                                    .setSupportsAllDrives(true)
+                                    .setSupportsTeamDrives(true)
+                                    .execute();
+                            founded = true;
+                            fileName = filePending.getName();
+                            fileSize = filePending.getSize();
+                        }catch(SecurityException | IOException d){
+                            LOGGER.error(d.getMessage());
+                            filesToDelete++;
+                            idsToDelete.add(entry.getKey());
+                            founded = false;
+                        }
+
+                        if(founded){
+                            if(filesPending >= offset && filesPending < limit){
+                                message.append("\n:pushpin: ");
+                                message.append(String.format("<b>\"%s\" (%s)</b>, creado el <b>%s</b>.",
+                                        fileName, Common.humanReadableByteCountBin(fileSize),
+                                        sdf.format(fileDate)));
+                                i++;
+                            }
+                            filesPending++;
+                        }
+                    }
+
+                    if(filesToDelete > 0){
+                        for(Long key : idsToDelete) storePendings.remove(key);
+                        drivePendings.put(chatId, storePendings);
+                    }
+
+                    message.append(String.format("\n\nMostrando %d - %d de %d", offset,
+                            offset+i, storePendings.size()));
+
+                    inlineKeyboardMarkup = new InlineKeyboardMarkup();
+                    keyboardAllRows = new ArrayList<>();
+                    keyboardRow = new ArrayList<>();
+
+                    InlineKeyboardButton keyButton;
+                    if(page > 1) {
+                        keyButton = new InlineKeyboardButton();
+                        keyButton.setText(EmojiParser.parseToUnicode(":arrow_left: Página anterior"));
+                        keyButton.setCallbackData(String.format("DRIVE:PENDINGS_PREVIOUS_PAGE:%d", page-1));
+                        keyboardRow.add(keyButton);
+                    }
+
+                    if(limit < storePendings.size()){
+                        keyButton = new InlineKeyboardButton();
+                        keyButton.setText(EmojiParser.parseToUnicode("Siguiente página :arrow_right:"));
+                        keyButton.setCallbackData(String.format("DRIVE:PENDINGS_NEXT_PAGE:%d", page+1));
+                        keyboardRow.add(keyButton);
+                    }
+
+                    keyboardAllRows.add(keyboardRow);
+                    inlineKeyboardMarkup.setKeyboard(keyboardAllRows);
+                    edited.setText(EmojiParser.parseToUnicode(message.toString()));
+                    edited.setReplyMarkup(inlineKeyboardMarkup);
+                    sender.execute(edited);
                 }
             }
         } catch (TelegramApiException | GeneralSecurityException | IOException e) {
