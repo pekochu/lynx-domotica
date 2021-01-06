@@ -182,15 +182,38 @@ public class DriveCommands implements AbilityExtension {
                             text.append("<b>Lista de los archivos que están pendientes</b>:\n");
                             for (Map.Entry<Long, String> entry : storePendings.entrySet()) {
                                 Date fileDate = new Date(entry.getKey() * 1000L);
-                                File filePending = service.files()
-                                        .get(entry.getValue())
-                                        .setFields(DRIVE_FIELDS)
-                                        .setSupportsAllDrives(true)
-                                        .setSupportsTeamDrives(true)
-                                        .execute();
-                                text.append(String.format("\n:pushpin: Archivo <b>\"%s\" (%s)</b> creado el <b>%s</b>",
-                                        filePending.getName(), Common.humanReadableByteCountBin(filePending.getSize()),
-                                        sdf.format(fileDate)));
+                                boolean founded;
+                                String fileName = "";
+                                Long fileSize = 0L;
+                                try{
+                                    File filePending = service.files()
+                                            .get(entry.getValue())
+                                            .setFields(DRIVE_FIELDS)
+                                            .setSupportsAllDrives(true)
+                                            .setSupportsTeamDrives(true)
+                                            .execute();
+                                    founded = true;
+                                    fileName = filePending.getName();
+                                    fileSize = filePending.getSize();
+                                }catch(SecurityException | IOException d){
+                                    LOGGER.error(d.getMessage());
+                                    founded = false;
+                                }
+
+                                if(founded){
+                                    text.append(String.format("\n:pushpin: Archivo <b>\"%s\" (%s)</b> creado el <b>%s</b>",
+                                            fileName, Common.humanReadableByteCountBin(fileSize),
+                                            sdf.format(fileDate)));
+                                }else{
+                                    text.append(String.format("\n:no_entry_sign: Archivo <b>\"%s\"</b>, creado el <b>%s</b>",
+                                            entry.getValue(), sdf.format(fileDate)));
+                                    text.append("No pudo ser encontrado en Google Drive.");
+                                    text.append("Posiblemente haya sido eliminado por Copyright,");
+                                    text.append(" DMCA Strike o simplemente lo eliminó el dueño. :shrug:\n");
+                                    text.append("Será eliminado de la lista de pendientes.\n\n");
+                                    storePendings.remove(entry.getKey());
+                                    drivePendings.put(ctx.chatId(), storePendings);
+                                }
                             }
 
                             inlineKeyboardMarkup = new InlineKeyboardMarkup();
