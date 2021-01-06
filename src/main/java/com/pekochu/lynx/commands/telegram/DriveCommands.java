@@ -185,6 +185,8 @@ public class DriveCommands implements AbilityExtension {
                                 File filePending = service.files()
                                         .get(entry.getValue())
                                         .setFields(DRIVE_FIELDS)
+                                        .setSupportsAllDrives(true)
+                                        .setSupportsTeamDrives(true)
                                         .execute();
                                 text.append(String.format("\n:pushpin: Archivo <b>\"%s\" (%s)</b> creado el <b>%s</b>",
                                         filePending.getName(), Common.humanReadableByteCountBin(filePending.getSize()),
@@ -257,6 +259,8 @@ public class DriveCommands implements AbilityExtension {
                             FileList result = service.files().list().setQ("'root' in parents and trashed=false")
                                     .setSpaces("drive")
                                     .setFields("nextPageToken, files(" + DRIVE_FIELDS + ")")
+                                    .setSupportsAllDrives(true)
+                                    .setSupportsTeamDrives(true)
                                     .setPageToken(pageToken).execute();
                             list.addAll(result.getFiles());
 
@@ -340,6 +344,8 @@ public class DriveCommands implements AbilityExtension {
                                     .setSpaces("drive")
                                     .setFields("nextPageToken, files(name, id, mimeType, kind, parents, owners, capabilities)")
                                     .setPageToken(pageToken)
+                                    .setSupportsAllDrives(true)
+                                    .setSupportsTeamDrives(true)
                                     .execute();
 
                             list.addAll(result.getFiles());
@@ -425,6 +431,8 @@ public class DriveCommands implements AbilityExtension {
             File parentFile = service.files()
                     .get(id)
                     .setFields(DRIVE_FIELDS)
+                    .setSupportsAllDrives(true)
+                    .setSupportsTeamDrives(true)
                     .execute();
 
             LOGGER.info(String.format("File ID: %s", parentFile.getId()));
@@ -566,10 +574,14 @@ public class DriveCommands implements AbilityExtension {
                         File filePending = service.files()
                                 .get(entry.getValue())
                                 .setFields(DRIVE_FIELDS)
+                                .setSupportsAllDrives(true)
+                                .setSupportsTeamDrives(true)
                                 .execute();
                         try{
-                            message.append(fileCopy(service, filePending.getId(),
-                                    new String[]{"", filePending.getId()}).toString());
+                            fileCopy(service, filePending.getId(), new String[]{"", filePending.getId()});
+                            message.append(String.format("Archivo <b>\"%s\" (%s)</b> copiado con éxito. ",
+                                    filePending.getName(), Common.humanReadableByteCountBin(filePending.getSize())));
+                            message.append(":white_check_mark:\n\n");
                             idsCopied.add(entry.getKey());
                         }catch(SecurityException | IOException d){
                             message.append(String.format("Archivo <b>\"%s\" (%s)</b> aún no puede copiarse porque ",
