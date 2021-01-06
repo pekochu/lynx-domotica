@@ -403,11 +403,19 @@ public class DriveCommands implements AbilityExtension {
                             new HashMap<>() : drivePendings.get(ctx.chatId());
 
                     String idPending = matcher.find() ? matcher.group(1) : args[1];
-                    if(storePendings.size() == 0){
-                        storePendings.put(System.currentTimeMillis() / 1000L, idPending);
-                    }else if(!storePendings.containsValue(idPending)){
-                        storePendings.put(System.currentTimeMillis() / 1000L, idPending);
+                    List<String> idList = Arrays.asList(idPending.split(","));
+                    for(int i = 0; i < idList.size(); i++){
+                        Long multiId = System.currentTimeMillis() / 1000L;
+                        Long key = Long.parseLong(String.format("%d%02d", multiId, i));
+                        String value = idList.get(i);
+
+                        if(storePendings.size() == 0){
+                            storePendings.put(key, value);
+                        } else if(!storePendings.containsValue(value)){
+                            storePendings.put(key, value);
+                        }
                     }
+
 
                     drivePendings.put(ctx.chatId(), storePendings);
                 }
@@ -491,6 +499,8 @@ public class DriveCommands implements AbilityExtension {
         File parentFile = service.files()
                 .get(id)
                 .setFields(DRIVE_FIELDS)
+                .setSupportsTeamDrives(true)
+                .setSupportsAllDrives(true)
                 .execute();
 
         text.append(String.format("Nombre del archivo: <b>%s</b>\n", parentFile.getName()));
@@ -571,23 +581,42 @@ public class DriveCommands implements AbilityExtension {
                     sender.execute(edited);
 
                     for (Map.Entry<Long, String> entry : storePendings.entrySet()) {
-                        File filePending = service.files()
-                                .get(entry.getValue())
-                                .setFields(DRIVE_FIELDS)
-                                .setSupportsAllDrives(true)
-                                .setSupportsTeamDrives(true)
-                                .execute();
+                        boolean founded = false;
+                        String fileName = "", fileId = "";
+                        Long fileSize = 0L;
                         try{
-                            fileCopy(service, filePending.getId(), new String[]{"", filePending.getId()});
-                            message.append(String.format("Archivo <b>\"%s\" (%s)</b> copiado con éxito. ",
-                                    filePending.getName(), Common.humanReadableByteCountBin(filePending.getSize())));
-                            message.append(":white_check_mark:\n\n");
-                            idsCopied.add(entry.getKey());
+                            File filePending = service.files()
+                                    .get(entry.getValue())
+                                    .setFields(DRIVE_FIELDS)
+                                    .setSupportsAllDrives(true)
+                                    .setSupportsTeamDrives(true)
+                                    .execute();
+                            founded = true;
+                            fileId = filePending.getId();
+                            fileName = filePending.getName();
+                            fileSize = filePending.getSize();
                         }catch(SecurityException | IOException d){
-                            message.append(String.format("Archivo <b>\"%s\" (%s)</b> aún no puede copiarse porque ",
-                                    filePending.getName(), Common.humanReadableByteCountBin(filePending.getSize())));
-                            message.append("se ha excedido la cuota del archivo o no tienes permisos para copiarlo.");
-                            message.append(" :no_entry_sign:\n\n");
+                            LOGGER.error(d.getMessage());
+                            founded = false;
+                        }
+
+                        if(founded){
+                            try{
+                                fileCopy(service, fileId, new String[]{"", fileId});
+                                message.append(String.format("Archivo <b>\"%s\" (%s)</b> copiado con éxito. ",
+                                        fileName, Common.humanReadableByteCountBin(fileSize)));
+                                message.append(":white_check_mark:\n\n");
+                                idsCopied.add(entry.getKey());
+                            }catch(SecurityException | IOException d){
+                                message.append(String.format("Archivo <b>\"%s\" (%s)</b> aún no puede copiarse porque ",
+                                        fileName, Common.humanReadableByteCountBin(fileSize)));
+                                message.append("se ha excedido la cuota del archivo o no tienes permisos para copiarlo.");
+                                message.append(" :no_entry_sign:\n\n");
+                            }
+                        }else{
+                            message.append(String.format("Archivo <b>\"%s\" no pudo ser encontrado. ", entry.getValue()));
+                            message.append("Posiblemente haya sido eliminado por Copyright, DMCA Strike o simplemente");
+                            message.append(" lo eliminó el dueño. :shrug:\n\n");
                         }
                     }
 
