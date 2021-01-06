@@ -176,6 +176,8 @@ public class DriveCommands implements AbilityExtension {
                         storePendings = drivePendings.get(ctx.chatId()) == null ?
                                 new HashMap<>() : drivePendings.get(ctx.chatId());
 
+                        List<Long> idsToDelete = new ArrayList<>();
+
                         if(storePendings.size() == 0){
                             text.append("No tienes archivos pendientes para copiar. :alien:");
                         }else{
@@ -211,8 +213,7 @@ public class DriveCommands implements AbilityExtension {
                                     text.append("Posiblemente haya sido eliminado por Copyright,");
                                     text.append(" DMCA Strike o simplemente lo eliminó el dueño. :shrug:\n");
                                     text.append("Será eliminado de la lista de pendientes.\n\n");
-                                    storePendings.remove(entry.getKey());
-                                    drivePendings.put(ctx.chatId(), storePendings);
+                                    idsToDelete.add(entry.getKey());
                                 }
                             }
 
@@ -233,6 +234,9 @@ public class DriveCommands implements AbilityExtension {
                             inlineKeyboardMarkup.setKeyboard(keyboardAllRows);
                             snd.setReplyMarkup(inlineKeyboardMarkup);
                         }
+
+                        for(Long key : idsToDelete) storePendings.remove(key);
+                        drivePendings.put(ctx.chatId(), storePendings);
 
                         snd.setText(EmojiParser.parseToUnicode(text.toString()));
                         snd.setChatId(String.valueOf(ctx.chatId()));
