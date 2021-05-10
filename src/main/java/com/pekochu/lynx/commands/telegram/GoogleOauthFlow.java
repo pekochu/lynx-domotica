@@ -31,7 +31,7 @@ import java.util.*;
 
 public class GoogleOauthFlow implements AbilityExtension {
 
-    private final static Logger LOGGER = LoggerFactory.getLogger(TelegramBot.class.getCanonicalName());
+    private final static Logger LOGGER = LoggerFactory.getLogger(GoogleOauthFlow.class.getCanonicalName());
 
     private final DBContext db;
     private MessageSender sender;

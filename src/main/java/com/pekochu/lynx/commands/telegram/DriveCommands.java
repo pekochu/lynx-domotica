@@ -42,7 +42,7 @@ import java.util.regex.Pattern;
 
 public class DriveCommands implements AbilityExtension {
 
-    private final static Logger LOGGER = LoggerFactory.getLogger(TelegramBot.class.getCanonicalName());
+    private final static Logger LOGGER = LoggerFactory.getLogger(DriveCommands.class.getCanonicalName());
     private final static String DRIVE_FIELDS = "name, id, mimeType, kind, parents, owners, capabilities, size";
 
     private final DBContext db;
@@ -186,7 +186,7 @@ public class DriveCommands implements AbilityExtension {
                         }else{
                             text.append("<b>Lista de los archivos que están pendientes</b>:\n");
                             for (Map.Entry<Long, String> entry : storePendings.entrySet()) {
-                                Date fileDate = new Date();
+                                Date fileDate;
                                 String keyFixed = Long.toString(entry.getKey());
                                 if(keyFixed.length() >= 10){
                                     keyFixed = keyFixed.substring(0, 10);
@@ -447,9 +447,9 @@ public class DriveCommands implements AbilityExtension {
                 }
             } //end-if
         } catch (TelegramApiException e) {
-            LOGGER.error(e.getMessage(), e);
+            LOGGER.error("Error en la API de Telegram", e);
         } catch (GeneralSecurityException | IOException e) {
-            LOGGER.error(e.getMessage());
+            LOGGER.error("Error en la API de Google", e);
 
             try{
                 // get code point of {
@@ -491,7 +491,7 @@ public class DriveCommands implements AbilityExtension {
 
                 sender.execute(snd);
             }catch (TelegramApiException | JSONException ex){
-                LOGGER.error(ex.getMessage(), ex);
+                LOGGER.error("Error en la API de Telegram o con el JSON", e);
             }
         }
     }
