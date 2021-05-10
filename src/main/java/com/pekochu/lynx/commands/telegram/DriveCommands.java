@@ -210,7 +210,7 @@ public class DriveCommands implements AbilityExtension {
                                     fileName = filePending.getName();
                                     fileSize = filePending.getSize();
                                 }catch(IOException d){
-                                    LOGGER.error(d.getMessage());
+                                    LOGGER.error("Error al obtener datos de los pendientes", d);
                                     founded = false;
                                 }
 
