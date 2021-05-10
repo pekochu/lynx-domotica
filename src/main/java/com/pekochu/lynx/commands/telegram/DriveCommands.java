@@ -186,7 +186,7 @@ public class DriveCommands implements AbilityExtension {
                         }else{
                             text.append("<b>Lista de los archivos que están pendientes</b>:\n");
                             for (Map.Entry<Long, String> entry : storePendings.entrySet()) {
-                                Date fileDate = null;
+                                Date fileDate = new Date();
                                 String keyFixed = Long.toString(entry.getKey());
                                 if(keyFixed.length() >= 10){
                                     keyFixed = keyFixed.substring(0, 10);
@@ -209,7 +209,7 @@ public class DriveCommands implements AbilityExtension {
                                     founded = true;
                                     fileName = filePending.getName();
                                     fileSize = filePending.getSize();
-                                }catch(SecurityException | IOException d){
+                                }catch(IOException d){
                                     LOGGER.error(d.getMessage());
                                     founded = false;
                                 }
