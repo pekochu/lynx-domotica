@@ -224,6 +224,8 @@ public class DriveCommands implements AbilityExtension {
                                                     sdf.format(fileDate)));
                                         }catch(Exception ge){
                                             LOGGER.error("Intentando cachar el error", ge);
+                                            idsToDelete.add(entry.getKey());
+                                            filesToDelete++;
                                         }
 
                                         i++;
