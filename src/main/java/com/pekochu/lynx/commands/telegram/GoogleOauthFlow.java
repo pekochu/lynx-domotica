@@ -1,21 +1,12 @@
 package com.pekochu.lynx.commands.telegram;
 
-import com.google.api.client.auth.oauth2.AuthorizationCodeResponseUrl;
-import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeRequestUrl;
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeTokenRequest;
-import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
-import com.google.api.client.http.HttpTransport;
-import com.google.api.client.http.javanet.NetHttpTransport;
-import com.google.api.client.json.jackson2.JacksonFactory;
-import com.google.api.services.drive.Drive;
+import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.drive.DriveScopes;
-import com.google.api.services.drive.model.File;
-import com.google.api.services.drive.model.FileList;
 import com.pekochu.lynx.bots.TelegramBot;
-import com.vdurmont.emoji.Emoji;
 import com.vdurmont.emoji.EmojiParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -211,7 +202,7 @@ public class GoogleOauthFlow implements AbilityExtension {
 
         GoogleTokenResponse response =
                 new GoogleAuthorizationCodeTokenRequest(GoogleNetHttpTransport.newTrustedTransport(),
-                        JacksonFactory.getDefaultInstance(), GOOGLE_CLIENT, GOOGLE_SECRET, code,
+                        new GsonFactory(), GOOGLE_CLIENT, GOOGLE_SECRET, code,
                         "https://pekochu.com/domotics/google/code").execute();
 
         storeCredentials.put("AUTH_CODE", code);

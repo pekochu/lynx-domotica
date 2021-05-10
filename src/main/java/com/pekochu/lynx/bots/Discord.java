@@ -3,12 +3,10 @@ package com.pekochu.lynx.bots;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
 import org.javacord.api.entity.permission.Permissions;
-import org.javacord.api.event.message.MessageCreateEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ExecutionException;
-import java.util.logging.Level;
 
 public class Discord {
 

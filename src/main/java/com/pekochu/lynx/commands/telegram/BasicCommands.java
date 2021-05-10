@@ -14,7 +14,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
-public class BasicCommands implements AbilityExtension {
+public class  BasicCommands implements AbilityExtension {
 
     private final SilentSender silent;
 

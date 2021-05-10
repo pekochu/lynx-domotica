@@ -3,7 +3,7 @@ package com.pekochu.lynx.commands.telegram;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.HttpTransport;
-import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.model.About;
 import com.google.api.services.drive.model.File;
@@ -12,7 +12,6 @@ import com.google.api.services.drive.model.User;
 import com.pekochu.lynx.bots.TelegramBot;
 import com.pekochu.lynx.utilities.Common;
 import com.vdurmont.emoji.EmojiParser;
-import org.javacord.api.entity.emoji.Emoji;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -27,9 +26,7 @@ import org.telegram.abilitybots.api.util.AbilityUtils;
 import org.telegram.telegrambots.meta.api.methods.ActionType;
 import org.telegram.telegrambots.meta.api.methods.send.SendChatAction;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
-import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
-import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
@@ -98,7 +95,7 @@ public class DriveCommands implements AbilityExtension {
         String refreshToken;
         String[] args = ctx.arguments();
         HttpTransport httpTransport;
-        JacksonFactory jacksonFactory;
+        GsonFactory gsonFactory;
 
         Pattern driveFileId = Pattern.compile("https://drive\\.google\\.com/file/d/(.*?)/.*?\\?usp=sharing");
         Matcher matcher;
@@ -147,7 +144,7 @@ public class DriveCommands implements AbilityExtension {
 
                 // now the user is authenticated
                 httpTransport = GoogleNetHttpTransport.newTrustedTransport();
-                jacksonFactory = JacksonFactory.getDefaultInstance();
+                gsonFactory = new GsonFactory();
 
                 // getting user tokens
                 Map<String, String> storeCredentials = driveCredentials.get(ctx.chatId());
@@ -157,14 +154,14 @@ public class DriveCommands implements AbilityExtension {
                 // creating credentials
                 credential = new GoogleCredential.Builder()
                         .setTransport(httpTransport)
-                        .setJsonFactory(jacksonFactory)
+                        .setJsonFactory(gsonFactory)
                         .setClientSecrets(GOOGLE_CLIENT, GOOGLE_SECRET).build();
                 credential.setAccessToken(accessToken);
                 credential.setRefreshToken(refreshToken);
 
 
                 service = new Drive.Builder(httpTransport,
-                        JacksonFactory.getDefaultInstance(),credential).setApplicationName("Lynx Domotics Bot").build();
+                        gsonFactory,credential).setApplicationName("Lynx Domotics Bot").build();
 
                 switch (args[0]) {
                     case "pending":
@@ -606,7 +603,7 @@ public class DriveCommands implements AbilityExtension {
         String accessToken;
         String refreshToken;
         HttpTransport httpTransport;
-        JacksonFactory jacksonFactory;
+        GsonFactory gsonFactory;
         GoogleCredential credential;
         Drive service;
 
@@ -624,7 +621,7 @@ public class DriveCommands implements AbilityExtension {
             if(dataSplitted[0].equals("DRIVE")){
                 // now the user is authenticated
                 httpTransport = GoogleNetHttpTransport.newTrustedTransport();
-                jacksonFactory = JacksonFactory.getDefaultInstance();
+                gsonFactory = new GsonFactory();
 
                 // getting user tokens
                 Map<String, String> storeCredentials = driveCredentials.get(chatId);
@@ -634,13 +631,13 @@ public class DriveCommands implements AbilityExtension {
                 // creating credentials
                 credential = new GoogleCredential.Builder()
                         .setTransport(httpTransport)
-                        .setJsonFactory(jacksonFactory)
+                        .setJsonFactory(gsonFactory)
                         .setClientSecrets(GOOGLE_CLIENT, GOOGLE_SECRET).build();
                 credential.setAccessToken(accessToken);
                 credential.setRefreshToken(refreshToken);
 
-                service = new Drive.Builder(httpTransport,
-                        JacksonFactory.getDefaultInstance(),credential).setApplicationName("Lynx Domotics Bot").build();
+                service = new Drive.Builder(httpTransport, gsonFactory,credential)
+                        .setApplicationName("Lynx Domotics Bot").build();
 
                 Map<Long, String> storePendings;
                 storePendings = drivePendings.get(chatId) == null ?

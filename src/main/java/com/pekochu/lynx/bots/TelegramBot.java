@@ -7,20 +7,14 @@ import com.pekochu.lynx.utilities.BotPropertiesProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-
 import org.springframework.stereotype.Service;
 import org.telegram.abilitybots.api.bot.AbilityBot;
-import org.telegram.abilitybots.api.objects.*;
 import org.telegram.abilitybots.api.util.AbilityExtension;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
-import org.telegram.telegrambots.meta.api.methods.ActionType;
-import org.telegram.telegrambots.meta.api.methods.send.SendChatAction;
-import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 
 import javax.annotation.PostConstruct;
-import java.util.function.Consumer;
 
 @Service
 public class TelegramBot extends AbilityBot {
@@ -62,7 +56,7 @@ public class TelegramBot extends AbilityBot {
     }
 
     @Override
-    public int creatorId() {
+    public long creatorId() {
         return 218168915;
     }
 
