@@ -217,9 +217,15 @@ public class DriveCommands implements AbilityExtension {
                                 if(founded){
                                     if(filesPending < 10){
                                         text.append("\n:pushpin: ");
-                                        text.append(String.format("<b>\"%s\" (%s)</b>, creado el <b>%s</b>.",
-                                                fileName, Common.humanReadableByteCountBin(fileSize),
-                                                sdf.format(fileDate)));
+
+                                        try{
+                                            text.append(String.format("<b>\"%s\" (%s)</b>, creado el <b>%s</b>.",
+                                                    fileName, Common.humanReadableByteCountBin(fileSize),
+                                                    sdf.format(fileDate)));
+                                        }catch(Exception ge){
+                                            LOGGER.error("Intentando cachar el error", ge);
+                                        }
+
                                         i++;
                                     }
                                     filesPending++;

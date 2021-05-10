@@ -51,7 +51,7 @@ public class TelegramBot extends AbilityBot {
             TelegramBotsApi telegramBotsApi = new TelegramBotsApi(DefaultBotSession.class);
             telegramBotsApi.registerBot(this);
         } catch (TelegramApiException e) {
-            LOGGER.error(e.getMessage(), e);
+            LOGGER.error("Error en la API de TelegramBots", e);
         }
     }
 
